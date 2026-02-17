@@ -11,11 +11,11 @@ export async function initializeDatabase() {
   }
 }
 
-export async function closeDatabase() {
-  try {
-    await AppDataSource.destroy();
-    console.log('✅ Conexión cerrada');
-  } catch (error) {
-    console.error('❌ Error cerrando conexión:', error);
-  }
-}
+// export async function closeDatabase() {
+//   try {
+//     await AppDataSource.destroy();
+//     console.log('✅ Conexión cerrada');
+//   } catch (error) {
+//     console.error('❌ Error cerrando conexión:', error);
+//   }
+// }

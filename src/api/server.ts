@@ -1,12 +1,23 @@
 import express from 'express';
 import cors from 'cors';
 import { DatabaseQueries } from '../database/queries';
+import { AppDataSource } from '../database/data-source';
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
+//Middleware para verificar conexión BD
+app.use((req, res, next) => {
+  if (!AppDataSource.isInitialized) {
+    return res.status(503).json({ 
+      error: 'Base de datos no disponible',
+      message: 'El servidor está iniciando, intenta de nuevo en unos segundos'
+    });
+  }
+  next();
+});
 // Ruta de health check
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'API funcionando' });
