@@ -7,6 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon --exec ts-node src/index.ts",
     "build": "tsc",
+    "start": "node dist/index.js",
     "migration:run": "ts-node -r dotenv/config node_modules/typeorm/cli.js migration:run -d src/database/data-source.ts",
     "migration:generate": "ts-node -r dotenv/config node_modules/typeorm/cli.js migration:generate -d src/database/data-source.ts",
     "migration:revert": "ts-node -r dotenv/config node_modules/typeorm/cli.js migration:revert -d src/database/data-source.ts"
