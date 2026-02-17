@@ -1,0 +1,33 @@
+{
+  "name": "tommybot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "practica.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon --exec ts-node src/index.ts",
+    "build": "tsc",
+    "migration:run": "ts-node -r dotenv/config node_modules/typeorm/cli.js migration:run -d src/database/data-source.ts",
+    "migration:generate": "ts-node -r dotenv/config node_modules/typeorm/cli.js migration:generate -d src/database/data-source.ts",
+    "migration:revert": "ts-node -r dotenv/config node_modules/typeorm/cli.js migration:revert -d src/database/data-source.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "pg": "^8.18.0",
+    "reflect-metadata": "^0.2.2",
+    "typeorm": "^0.3.28"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.2.3",
+    "nodemon": "^3.1.11",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  }
+}
