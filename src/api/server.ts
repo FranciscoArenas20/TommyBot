@@ -2,6 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import { DatabaseQueries } from '../database/queries';
 import { AppDataSource } from '../database/data-source';
+import { GeminiService } from '../ai/gemini';
+import { DeliveryZona } from '../database/entities/DeliveryZona';
 
 const app = express();
 
@@ -77,6 +79,91 @@ app.get('/api/delivery/buscar', async (req, res) => {
   } catch (error) {
     console.error('Error buscando zona:', error);
     res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+app.post('/api/chat/inteligente', async (req, res) => {
+  try {
+    const { mensaje, clientNumber } = req.body;
+    
+    if (!mensaje) {
+      return res.status(400).json({ error: 'Parámetro "mensaje" requerido' });
+    }
+
+    console.log(`📨 Mensaje recibido de ${clientNumber}: ${mensaje}`);
+
+    // 1. Analizar intención con Gemini
+    const analisis = await GeminiService.analizarMensaje(mensaje);
+    console.log('🧠 Análisis IA:', analisis);
+
+    let respuesta = '';
+    let productos: any[] = [];
+    let zonasDelivery: any[] = [];
+
+    // 2. Ejecutar acciones según la intención
+    switch (analisis.intencion) {
+      case 'consulta_precio':
+      case 'consulta_producto':
+        // Buscar productos mencionados
+        if (analisis.productos && analisis.productos.length > 0) {
+          for (const nombreProducto of analisis.productos) {
+            const productosEncontrados = await DatabaseQueries.buscarProducto(nombreProducto);
+            productos.push(...productosEncontrados);
+          }
+        } else {
+          // Si no mencionó productos específicos, mostrar todos
+          productos = await DatabaseQueries.listarProductosDisponibles();
+        }
+        break;
+
+      case 'consulta_delivery':
+        // Buscar zona si la mencionó
+        if (analisis.zona) {
+          zonasDelivery = await DatabaseQueries.buscarZonaDelivery(analisis.zona);
+        } else {
+          // Mostrar todas las zonas
+          const deliveryRepo = AppDataSource.getRepository(DeliveryZona);
+          zonasDelivery = await deliveryRepo.find({ where: { disponible: true } });
+        }
+        break;
+
+      case 'consulta_horario':
+        respuesta = '🕐 Nuestro horario:\n\nLunes a Sábado: 8:00am - 6:00pm\nDomingos: 9:00am - 2:00pm\n\n¿En qué más te puedo ayudar? 🐾';
+        break;
+
+      case 'saludo':
+        respuesta = '¡Hola! 👋 Bienvenido a Tommy Pet Food 🐾\n\n¿En qué te puedo ayudar hoy?\n\nPuedo informarte sobre:\n• Productos disponibles\n• Precios\n• Delivery\n• Horarios';
+        break;
+
+      case 'pedido':
+        respuesta = '📦 ¡Genial! Para procesar tu pedido necesito:\n\n1️⃣ Producto(s) que deseas\n2️⃣ Cantidad\n3️⃣ Zona de entrega\n\n¿Me puedes dar estos detalles? 🐕';
+        break;
+
+      default:
+        respuesta = 'Entiendo que tienes una consulta. ¿Podrías darme más detalles sobre qué necesitas? Puedo ayudarte con productos, precios, delivery y horarios 🐾';
+    }
+
+    // 3. Si no hay respuesta fija, generar con IA
+    if (!respuesta) {
+      respuesta = await GeminiService.generarRespuesta({
+        mensajeCliente: mensaje,
+        intencion: analisis.intencion,
+        productos: productos.length > 0 ? productos : undefined,
+        zonasDelivery: zonasDelivery.length > 0 ? zonasDelivery : undefined
+      });
+    }
+
+    // 4. Responder
+    res.json({
+      respuesta,
+      analisis,
+      productos,
+      zonasDelivery
+    });
+
+  } catch (error) {
+    console.error('Error en chat inteligente:', error);
+    res.status(500).json({ error: 'Error procesando mensaje' });
   }
 });
 
