@@ -4,6 +4,7 @@ import { DatabaseQueries } from '../database/queries';
 import { AppDataSource } from '../database/data-source';
 import { GeminiService } from '../ai/gemini';
 import { DeliveryZona } from '../database/entities/DeliveryZona';
+import { Pedido } from '../database/entities/Pedido';
 
 const app = express();
 
@@ -81,6 +82,12 @@ app.get('/api/delivery/buscar', async (req, res) => {
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
+
+// app.get('/products', async (req, res) => {
+//   try {
+//     return res.status(200).
+//   }
+// })
 
 app.post('/api/chat/inteligente', async (req, res) => {
   try {
@@ -164,6 +171,41 @@ app.post('/api/chat/inteligente', async (req, res) => {
   } catch (error) {
     console.error('Error en chat inteligente:', error);
     res.status(500).json({ error: 'Error procesando mensaje' });
+  }
+});
+
+// Crear pedido
+app.post('/api/pedidos/crear', async (req, res) => {
+  try {
+    const { 
+      clienteNombre, 
+      clienteTelefono, 
+      productos, 
+      total, 
+      zonaEntrega 
+    } = req.body;
+
+    const pedidoRepo = AppDataSource.getRepository(Pedido);
+    
+    const nuevoPedido = pedidoRepo.create({
+      clienteNombre,
+      clienteTelefono,
+      productos: JSON.stringify(productos),
+      total,
+      zonaEntrega,
+      estado: 'pendiente'
+    });
+
+    await pedidoRepo.save(nuevoPedido);
+
+    res.json({ 
+      success: true, 
+      pedido: nuevoPedido 
+    });
+
+  } catch (error) {
+    console.error('Error creando pedido:', error);
+    res.status(500).json({ error: 'Error interno' });
   }
 });
 

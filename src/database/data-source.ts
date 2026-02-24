@@ -4,6 +4,7 @@ import { config } from 'dotenv';
 import { Categoria } from './entities/Categoria';
 import { Producto } from './entities/Producto';
 import { DeliveryZona } from './entities/DeliveryZona';
+import { Pedido } from './entities/Pedido';
 
 // Cargar variables de entorno
 config();
@@ -17,7 +18,7 @@ export const AppDataSource = new DataSource({
   database: process.env.DB_DATABASE,
   synchronize: true, // IMPORTANTE: en producción debe ser false
   logging: false, // Para ver las queries SQL en consola
-  entities: [Categoria, Producto, DeliveryZona],
+  entities: [Categoria, Producto, DeliveryZona, Pedido],
   migrations: ['src/database/migrations/**/*.ts'],
   subscribers: [],
   ssl: {
