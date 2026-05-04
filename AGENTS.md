@@ -62,6 +62,15 @@ PostgreSQL (Railway). Conexión vía `DATABASE_URL` en `.env`.
 
 2. **`generarRespuesta(contexto)`** — Genera respuesta conversacional para WhatsApp con emojis. Reglas estrictas anti-hallucinación: nunca inventa nombres ni precios. Si un producto no se encuentra, sugiere productos relacionados de la misma categoría. Precios 0.00 → decir que están disponibles y consultar precio. Temperatura 0.7.
 
+**Lógica de búsqueda en server.ts** (`/api/chat/inteligente`):
+1. Si el análisis detecta `categoria` → usa `obtenerProductosPorCategoria()` (solo productos de esa categoría)
+2. Si detecta productos específicos → usa `buscarProducto()` (LIKE). Si no encuentra ninguno → carga `productosRelacionados` como fallback
+3. Si no hay categoría ni productos específicos → lista todos los productos
+
+**Historial de problemas resueltos:**
+- **Hallucinación de Gemini**: Gemini inventaba nombres y precios que no existían en la BD. Se migró a Groq Qwen3 32B con reglas estrictas anti-hallucinación en el system prompt.
+- **Categoría vs Producto**: El prompt de análisis ahora distingue entre categorías ("gatarina") y marcas ("Mirringo"). "gatarina" → campo `categoria`, "Mirringo" → campo `productos`.
+
 ## Convenciones
 
 - TypeScript strict mode con decorators experimentales (`experimentalDecorators`, `emitDecoratorMetadata`)
@@ -83,3 +92,9 @@ PostgreSQL (Railway). Conexión vía `DATABASE_URL` en `.env`.
 ## CI/CD
 
 GitHub Actions con Claude Code para review automática en PRs (`.github/workflows/claude-code-review.yml`) y comentarios con `@claude` (`.github/workflows/claude.yml`).
+
+## Estado actual del proyecto
+
+- **Última sesión**: Se migró de Gemini a Groq (Qwen3 32B), se corrigió el bug de hallucinación de IA, se agregó detección de categorías, y se renombró la tienda de "Tommy Pet Food" a "Mascotienda Tommy".
+- **Pendiente**: Configurar la `GROQ_API_KEY` en el `.env` para poder probar el chat.
+- **Precios de productos**: Todos están en `0.00`. El seed los crea así por defecto. El frontend/IA debe decir que consulten el precio directamente cuando sea 0.00.
