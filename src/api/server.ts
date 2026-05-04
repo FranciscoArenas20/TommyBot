@@ -105,20 +105,30 @@ app.post('/api/chat/inteligente', async (req, res) => {
 
     let respuesta = '';
     let productos: any[] = [];
+    let productosRelacionados: any[] = [];
     let zonasDelivery: any[] = [];
 
     // 2. Ejecutar acciones según la intención
     switch (analisis.intencion) {
       case 'consulta_precio':
       case 'consulta_producto':
-        // Buscar productos mencionados
-        if (analisis.productos && analisis.productos.length > 0) {
+        // Si hay categoría, obtener productos de esa categoría
+        if (analisis.categoria) {
+          productos = await DatabaseQueries.obtenerProductosPorCategoria(analisis.categoria);
+        }
+        // Si hay productos específicos mencionados, buscarlos
+        else if (analisis.productos && analisis.productos.length > 0) {
           for (const nombreProducto of analisis.productos) {
             const productosEncontrados = await DatabaseQueries.buscarProducto(nombreProducto);
             productos.push(...productosEncontrados);
           }
-        } else {
-          // Si no mencionó productos específicos, mostrar todos
+          // Si no encontró el producto específico, obtener relacionados de la misma búsqueda
+          if (productos.length === 0) {
+            productosRelacionados = await DatabaseQueries.listarProductosDisponibles();
+          }
+        }
+        // Si no mencionó productos ni categoría específicos, mostrar todos
+        else {
           productos = await DatabaseQueries.listarProductosDisponibles();
         }
         break;
@@ -139,7 +149,7 @@ app.post('/api/chat/inteligente', async (req, res) => {
         break;
 
       case 'saludo':
-        respuesta = '¡Hola! 👋 Bienvenido a Tommy Pet Food 🐾\n\n¿En qué te puedo ayudar hoy?\n\nPuedo informarte sobre:\n• Productos disponibles\n• Precios\n• Delivery\n• Horarios';
+        respuesta = '¡Hola! 👋 Bienvenido a Mascotienda Tommy 🐾\n\n¿En qué te puedo ayudar hoy?\n\nPuedo informarte sobre:\n• Productos disponibles\n• Precios\n• Delivery\n• Horarios';
         break;
 
       case 'pedido':
@@ -155,7 +165,9 @@ app.post('/api/chat/inteligente', async (req, res) => {
       respuesta = await GeminiService.generarRespuesta({
         mensajeCliente: mensaje,
         intencion: analisis.intencion,
+        categoria: analisis.categoria,
         productos: productos.length > 0 ? productos : undefined,
+        productosRelacionados: productosRelacionados.length > 0 ? productosRelacionados : undefined,
         zonasDelivery: zonasDelivery.length > 0 ? zonasDelivery : undefined
       });
     }
@@ -165,6 +177,7 @@ app.post('/api/chat/inteligente', async (req, res) => {
       respuesta,
       analisis,
       productos,
+      productosRelacionados,
       zonasDelivery
     });
 

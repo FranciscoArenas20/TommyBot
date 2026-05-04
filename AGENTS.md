@@ -1,6 +1,6 @@
 # TommyBot
 
-Backend para Tommy Pet Food — asistente de atención al cliente con IA (Gemini) integrado a n8n/WhatsApp.
+Backend para Mascotienda Tommy — asistente de atención al cliente con IA (Gemini) integrado a n8n/WhatsApp.
 
 ## Comandos
 
@@ -58,8 +58,9 @@ PostgreSQL (Railway). Conexión vía `DATABASE_URL` en `.env`.
 
 `GeminiService` tiene dos métodos estáticos:
 
-1. **`analizarMensaje(mensaje)`** — Extrae intención (JSON): `consulta_precio`, `consulta_producto`, `consulta_delivery`, `consulta_horario`, `pedido`, `saludo`, `otro`. También extrae productos, zona y cantidad mencionados.
-2. **`generarRespuesta(contexto)`** — Genera respuesta conversacional para WhatsApp con emojis.
+1. **`analizarMensaje(mensaje)`** — Extrae intención (JSON): `consulta_precio`, `consulta_producto`, `consulta_delivery`, `consulta_horario`, `pedido`, `saludo`, `otro`. También extrae **categoria** (Gatarina, Perrarina, etc.), productos, zona y cantidad mencionados. Las categorías se extraen separadas de los productos — "gatarina" va en `categoria`, "Mirringo" va en `productos`.
+
+2. **`generarRespuesta(contexto)`** — Genera respuesta conversacional para WhatsApp con emojis. Reglas estrictas anti-hallucinación: nunca inventa nombres ni precios. Si un producto no se encuentra, sugiere productos relacionados de la misma categoría. Precios 0.00 → decir que están disponibles y consultar precio.
 
 ## Convenciones
 
