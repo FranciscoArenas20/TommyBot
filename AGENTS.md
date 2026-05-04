@@ -1,6 +1,6 @@
 # TommyBot
 
-Backend para Mascotienda Tommy — asistente de atención al cliente con IA (Gemini) integrado a n8n/WhatsApp.
+Backend para Mascotienda Tommy — asistente de atención al cliente con IA (Groq Qwen3 32B) integrado a n8n/WhatsApp.
 
 ## Comandos
 
@@ -22,7 +22,7 @@ Single-package TypeScript. Tres módulos en `src/`:
 | Directorio | Responsabilidad |
 |---|---|
 | `src/api/server.ts` | Express 5 — define todos los endpoints |
-| `src/ai/gemini.ts` | GeminiService — analiza intención del cliente y genera respuestas |
+| `src/ai/groq.ts` | GroqService — analiza intención del cliente y genera respuestas (modelo qwen/qwen3-32b) |
 | `src/database/` | TypeORM + PostgreSQL — entidades, queries, seed |
 
 **Flujo de inicio** (`src/index.ts`): `dotenv → initializeDatabase → seedDatabase → app.listen`. La DB debe estar conectada antes de que el servidor arranque.
@@ -54,13 +54,13 @@ PostgreSQL (Railway). Conexión vía `DATABASE_URL` en `.env`.
 | POST | `/api/chat/inteligente` | Chat con IA — recibe `{mensaje, clientNumber}`, retorna análisis + respuesta |
 | POST | `/api/pedidos/crear` | Crea pedido — recibe `{clienteNombre, clienteTelefono, productos, total, zonaEntrega}` |
 
-## IA (Gemini)
+## IA (Groq)
 
-`GeminiService` tiene dos métodos estáticos:
+`GroqService` usa el modelo **qwen/qwen3-32b** (gratuito en el free tier de Groq, ~14,400 req/día). Usa formato chat con system + user messages.
 
-1. **`analizarMensaje(mensaje)`** — Extrae intención (JSON): `consulta_precio`, `consulta_producto`, `consulta_delivery`, `consulta_horario`, `pedido`, `saludo`, `otro`. También extrae **categoria** (Gatarina, Perrarina, etc.), productos, zona y cantidad mencionados. Las categorías se extraen separadas de los productos — "gatarina" va en `categoria`, "Mirringo" va en `productos`.
+1. **`analizarMensaje(mensaje)`** — Extrae intención (JSON): `consulta_precio`, `consulta_producto`, `consulta_delivery`, `consulta_horario`, `pedido`, `saludo`, `otro`. También extrae **categoria** (Gatarina, Perrarina, etc.), productos, zona y cantidad mencionados. Las categorías se extraen separadas de los productos — "gatarina" va en `categoria`, "Mirringo" va en `productos`. Temperatura 0 (determinístico).
 
-2. **`generarRespuesta(contexto)`** — Genera respuesta conversacional para WhatsApp con emojis. Reglas estrictas anti-hallucinación: nunca inventa nombres ni precios. Si un producto no se encuentra, sugiere productos relacionados de la misma categoría. Precios 0.00 → decir que están disponibles y consultar precio.
+2. **`generarRespuesta(contexto)`** — Genera respuesta conversacional para WhatsApp con emojis. Reglas estrictas anti-hallucinación: nunca inventa nombres ni precios. Si un producto no se encuentra, sugiere productos relacionados de la misma categoría. Precios 0.00 → decir que están disponibles y consultar precio. Temperatura 0.7.
 
 ## Convenciones
 
@@ -75,7 +75,7 @@ PostgreSQL (Railway). Conexión vía `DATABASE_URL` en `.env`.
 
 | Variable | Descripción |
 |---|---|
-| `GEMINI_API_KEY` | API key de Google Gemini |
+| `GROQ_API_KEY` | API key de Groq (obtener en console.groq.com/keys, free tier sin tarjeta) |
 | `DATABASE_URL` | Connection string PostgreSQL |
 | `PORT` | Puerto del servidor (default: 3000) |
 | `NODE_ENV` | development / production |

@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import { DatabaseQueries } from '../database/queries';
 import { AppDataSource } from '../database/data-source';
-import { GeminiService } from '../ai/gemini';
+import { GroqService } from '../ai/groq';
 import { DeliveryZona } from '../database/entities/DeliveryZona';
 import { Pedido } from '../database/entities/Pedido';
 
@@ -99,8 +99,8 @@ app.post('/api/chat/inteligente', async (req, res) => {
 
     console.log(`📨 Mensaje recibido de ${clientNumber}: ${mensaje}`);
 
-    // 1. Analizar intención con Gemini
-    const analisis = await GeminiService.analizarMensaje(mensaje);
+    // 1. Analizar intención con Groq
+    const analisis = await GroqService.analizarMensaje(mensaje);
     console.log('🧠 Análisis IA:', analisis);
 
     let respuesta = '';
@@ -162,7 +162,7 @@ app.post('/api/chat/inteligente', async (req, res) => {
 
     // 3. Si no hay respuesta fija, generar con IA
     if (!respuesta) {
-      respuesta = await GeminiService.generarRespuesta({
+      respuesta = await GroqService.generarRespuesta({
         mensajeCliente: mensaje,
         intencion: analisis.intencion,
         categoria: analisis.categoria,
