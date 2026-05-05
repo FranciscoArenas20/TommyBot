@@ -50,8 +50,18 @@ Responde SOLO con JSON válido en este formato exacto, sin texto adicional:
         max_tokens: 500
       });
 
-      const raw = completion.choices[0]?.message?.content || '';
-      const cleanJson = raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      let raw = completion.choices[0]?.message?.content || '';
+
+      // Eliminar bloques de pensamiento del modelo Qwen3 (incluso si estan truncados)
+      raw = raw.replace(/<think>[\s\S]*?(<\/think>|$)/gi, '').trim();
+
+      // Extraer JSON entre el primer { y ultimo }
+      const start = raw.indexOf('{');
+      const end = raw.lastIndexOf('}');
+      if (start === -1 || end === -1 || end <= start) {
+        throw new Error('No se encontro JSON en la respuesta');
+      }
+      const cleanJson = raw.slice(start, end + 1);
       return JSON.parse(cleanJson);
     } catch (error) {
       console.error('Error analizando mensaje:', error);
@@ -91,6 +101,7 @@ REGLAS ABSOLUTAS - NO PUEDES VIOLARLAS:
 3. SOLO usa la información que te doy en el contexto. Si no hay datos sobre un producto, NO lo menciones.
 4. Responde de forma conversacional, como un vendedor amable en WhatsApp. Usa emojis apropiados (🐾 🐕 🐈 💰 🚚).
 5. Máximo 3-4 líneas.
+6. NO uses etiquetas <think> ni ningún otro tipo de razonamiento visible. Responde directamente con la respuesta final.
 
 CASO ESPECIAL - Producto no encontrado:
 Si el usuario preguntó por un producto específico y NO aparece en "productos encontrados", responde con este formato:
@@ -108,7 +119,9 @@ Los productos relacionados son alternativas de la misma categoría que SÍ está
         max_tokens: 500
       });
 
-      return completion.choices[0]?.message?.content || '';
+      let raw = completion.choices[0]?.message?.content || '';
+      raw = raw.replace(/<think>[\s\S]*?(<\/think>|$)/gi, '').trim();
+      return raw || '';
     } catch (error) {
       console.error('Error generando respuesta:', error);
       return 'Disculpa, tuve un problema procesando tu mensaje. ¿Puedes intentar de nuevo? 🙏';

@@ -10,6 +10,7 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 //Middleware para verificar conexión BD
 app.use((req, res, next) => {
@@ -91,7 +92,7 @@ app.get('/api/delivery/buscar', async (req, res) => {
 
 app.post('/api/chat/inteligente', async (req, res) => {
   try {
-    const { mensaje, clientNumber } = req.body;
+    const { mensaje, clientNumber } = req.body || {};
     
     if (!mensaje) {
       return res.status(400).json({ error: 'Parámetro "mensaje" requerido' });
@@ -196,7 +197,7 @@ app.post('/api/pedidos/crear', async (req, res) => {
       productos, 
       total, 
       zonaEntrega 
-    } = req.body;
+    } = req.body || {};
 
     const pedidoRepo = AppDataSource.getRepository(Pedido);
     
