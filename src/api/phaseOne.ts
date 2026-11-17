@@ -1,6 +1,7 @@
 ﻿import { Router } from 'express';
 import { Producto } from '../database/entities/Producto';
 import { AppDataSource } from '../database/data-source';
+import { GroqService } from '../ai/groq';
 
 export const phaseOne = Router();
 const allowed = () => process.env.TOMMY_TEST_NUMBER;
@@ -35,16 +36,23 @@ phaseOne.post('/api/chat/inteligente', async (req, res) => {
   const sender = String(clientNumber || '').replace(/^\+/, '').replace(/@s\.whatsapp\.net$/, '');
   if (!allowed() || sender !== allowed()) return res.sendStatus(403);
   if (typeof mensaje !== 'string' || !mensaje.trim()) return res.sendStatus(400);
+  const analisis = await GroqService.analizarMensaje(mensaje);
   const items = await AppDataSource.getRepository(Producto).find({ relations: ['categoria'], order: { nombre: 'ASC' } });
-  const words = mensaje.toLowerCase().match(/[\p{L}\p{N}]+/gu) || [];
-  const has = (word: string) => (words as string[]).includes(word.toLowerCase());
-  const named = items.filter(p => has(p.nombre));
-  const category = items.filter(p => has(p.categoria.nombre) || (p.categoria.nombre === 'Gatarina' && /\bgatos?\b/i.test(mensaje)) || (p.categoria.nombre === 'Perrarina' && /\bperros?\b/i.test(mensaje)));
-  const selected = named.length ? named : category.length ? category : items.filter(p => p.disponible);
-  const lines = selected.map(p => {
-    const price = Number(p.precioKilo) || demoPrices[p.nombre];
-    return p.nombre + (p.disponible ? ' disponible' + (price ? ' · US$' + price.toFixed(2) + '/kg' + (Number(p.precioKilo) ? '' : ' (demo)') : ' · precio por confirmar') : ' agotado');
+  const words = mensaje.toLocaleLowerCase().match(/[\p{L}\p{N}]+/gu) || [];
+  const mentioned = (analisis.productos || []).map((name: string) => String(name).toLocaleLowerCase());
+  const named = items.filter(p => mentioned.includes(p.nombre.toLocaleLowerCase()) || words.includes(p.nombre.toLocaleLowerCase()));
+  const categoryName = String(analisis.categoria || '').toLocaleLowerCase();
+  const categories = items.filter(p => categoryName && p.categoria.nombre.toLocaleLowerCase().includes(categoryName));
+  const selected = named.length ? named : categories.length ? categories : items.filter(p => p.disponible);
+  const answerProducts = selected.map(p => {
+    const demoPrice = demoPrices[p.nombre];
+    return { nombre: p.nombre, disponible: p.disponible, precioKilo: Number(p.precioKilo) || demoPrice || null, precioEsDemo: !Number(p.precioKilo) && Boolean(demoPrice), categoria: p.categoria.nombre };
   });
-  const respuesta = (named.length || category.length ? '' : 'Estos son los productos disponibles de Mascotienda Tommy.\n') + lines.join('\n');
-  return res.json({ respuesta, analisis: { intencion: 'consulta_producto', productos: selected.map(p => p.nombre) }, productos: selected, productosRelacionados: [], zonasDelivery: [] });
+  const respuesta = await GroqService.generarRespuesta({
+    mensajeCliente: mensaje,
+    intencion: analisis.intencion || 'otro',
+    categoria: analisis.categoria || undefined,
+    productos: answerProducts,
+  });
+  return res.json({ respuesta, analisis, productos: answerProducts, productosRelacionados: [], zonasDelivery: [] });
 });
