@@ -1,4 +1,4 @@
-﻿import { Router } from 'express';
+import { Router } from 'express';
 import { Producto } from '../database/entities/Producto';
 import { AppDataSource } from '../database/data-source';
 import { GroqService } from '../ai/groq';
@@ -38,7 +38,7 @@ phaseOne.post('/api/chat/inteligente', async (req, res) => {
   if (typeof mensaje !== 'string' || !mensaje.trim()) return res.sendStatus(400);
   const analisis = await GroqService.analizarMensaje(mensaje);
   const items = await AppDataSource.getRepository(Producto).find({ relations: ['categoria'], order: { nombre: 'ASC' } });
-  const words = mensaje.toLocaleLowerCase().match(/[\p{L}\p{N}]+/gu) || [];
+  const words: string[] = Array.from(mensaje.toLocaleLowerCase().match(/[\p{L}\p{N}]+/gu) || []);
   const mentioned = (analisis.productos || []).map((name: string) => String(name).toLocaleLowerCase());
   const named = items.filter(p => mentioned.includes(p.nombre.toLocaleLowerCase()) || words.includes(p.nombre.toLocaleLowerCase()));
   const categoryName = String(analisis.categoria || '').toLocaleLowerCase();
@@ -56,3 +56,4 @@ phaseOne.post('/api/chat/inteligente', async (req, res) => {
   });
   return res.json({ respuesta, analisis, productos: answerProducts, productosRelacionados: [], zonasDelivery: [] });
 });
+
