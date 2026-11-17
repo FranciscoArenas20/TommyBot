@@ -1,3 +1,4 @@
+import { phaseOne } from './phaseOne';
 import express from 'express';
 import cors from 'cors';
 import { DatabaseQueries } from '../database/queries';
@@ -22,6 +23,7 @@ app.use((req, res, next) => {
   }
   next();
 });
+app.use(phaseOne);
 // Ruta de health check
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'API funcionando' });
