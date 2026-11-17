@@ -1,6 +1,6 @@
 # TommyBot
 
-Backend para Mascotienda Tommy — asistente de atención al cliente con IA (Groq Qwen3 32B) integrado a n8n/WhatsApp.
+Backend para Mascotienda Tommy — asistente de atención al cliente con IA de Groq integrado a n8n/WhatsApp.
 
 ## Comandos
 
@@ -22,7 +22,7 @@ Single-package TypeScript. Tres módulos en `src/`:
 | Directorio | Responsabilidad |
 |---|---|
 | `src/api/server.ts` | Express 5 — define todos los endpoints |
-| `src/ai/groq.ts` | GroqService — analiza intención del cliente y genera respuestas (modelo qwen/qwen3-32b) |
+| `src/ai/groq.ts` | GroqService — analiza intención del cliente y genera respuestas (GROQ_MODEL, por defecto `openai/gpt-oss-20b`) |
 | `src/database/` | TypeORM + PostgreSQL — entidades, queries, seed |
 
 **Flujo de inicio** (`src/index.ts`): `dotenv → initializeDatabase → seedDatabase → app.listen`. La DB debe estar conectada antes de que el servidor arranque.
@@ -56,7 +56,7 @@ PostgreSQL (Railway). Conexión vía `DATABASE_URL` en `.env`.
 
 ## IA (Groq)
 
-`GroqService` usa el modelo **qwen/qwen3-32b** (gratuito en el free tier de Groq, ~14,400 req/día). Usa formato chat con system + user messages.
+`GroqService` usa `GROQ_MODEL` o `openai/gpt-oss-20b` por defecto. La clave se lee de `GROQ_API_KEY`. El análisis usa formato JSON para estructurar la intención y genera respuestas conversacionales con el mismo modelo.
 
 1. **`analizarMensaje(mensaje)`** — Extrae intención (JSON): `consulta_precio`, `consulta_producto`, `consulta_delivery`, `consulta_horario`, `pedido`, `saludo`, `otro`. También extrae **categoria** (Gatarina, Perrarina, etc.), productos, zona y cantidad mencionados. Las categorías se extraen separadas de los productos — "gatarina" va en `categoria`, "Mirringo" va en `productos`. Temperatura 0 (determinístico).
 
@@ -68,7 +68,7 @@ PostgreSQL (Railway). Conexión vía `DATABASE_URL` en `.env`.
 3. Si no hay categoría ni productos específicos → lista todos los productos
 
 **Historial de problemas resueltos:**
-- **Hallucinación de Gemini**: Gemini inventaba nombres y precios que no existían en la BD. Se migró a Groq Qwen3 32B con reglas estrictas anti-hallucinación en el system prompt.
+- **Hallucinación de Gemini**: Gemini inventaba nombres y precios que no existían en la BD. Se migró a Groq con reglas estrictas anti-hallucinación en el system prompt.
 - **Categoría vs Producto**: El prompt de análisis ahora distingue entre categorías ("gatarina") y marcas ("Mirringo"). "gatarina" → campo `categoria`, "Mirringo" → campo `productos`.
 
 ## Convenciones
@@ -84,7 +84,8 @@ PostgreSQL (Railway). Conexión vía `DATABASE_URL` en `.env`.
 
 | Variable | Descripción |
 |---|---|
-| `GROQ_API_KEY` | API key de Groq (obtener en console.groq.com/keys, free tier sin tarjeta) |
+| `GROQ_API_KEY` | API key de Groq (obtener en console.groq.com/keys) |
+| `GROQ_MODEL` | Modelo Groq opcional (default: `openai/gpt-oss-20b`) |
 | `DATABASE_URL` | Connection string PostgreSQL |
 | `PORT` | Puerto del servidor (default: 3000) |
 | `NODE_ENV` | development / production |
@@ -95,6 +96,6 @@ GitHub Actions con Claude Code para review automática en PRs (`.github/workflow
 
 ## Estado actual del proyecto
 
-- **Última sesión**: Se migró de Gemini a Groq (Qwen3 32B), se corrigió el bug de hallucinación de IA, se agregó detección de categorías, y se renombró la tienda de "Tommy Pet Food" a "Mascotienda Tommy".
-- **Pendiente**: Configurar la `GROQ_API_KEY` en el `.env` para poder probar el chat.
+- **Última sesión**: Se cambió el modelo obsoleto de Groq por `openai/gpt-oss-20b`, que puede modificarse con `GROQ_MODEL`; el análisis exige respuesta JSON.
+- **Entorno local**: Configurar `GROQ_API_KEY` y `DATABASE_URL` en `.env` para ejecutar el backend fuera de Railway.
 - **Precios de productos**: Todos están en `0.00`. El seed los crea así por defecto. El frontend/IA debe decir que consulten el precio directamente cuando sea 0.00.

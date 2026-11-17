@@ -1,7 +1,7 @@
 import Groq from 'groq-sdk';
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-const MODEL = 'qwen/qwen3-32b';
+const MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-20b';
 
 export class GroqService {
   
@@ -46,13 +46,14 @@ Responde SOLO con JSON válido en este formato exacto, sin texto adicional:
           { role: 'system', content: systemPrompt },
           { role: 'user', content: mensaje }
         ],
+        response_format: { type: 'json_object' },
         temperature: 0,
         max_tokens: 500
       });
 
       let raw = completion.choices[0]?.message?.content || '';
 
-      // Eliminar bloques de pensamiento del modelo Qwen3 (incluso si estan truncados)
+      // Eliminar bloques de pensamiento si el proveedor los incluye en el contenido.
       raw = raw.replace(/<think>[\s\S]*?(<\/think>|$)/gi, '').trim();
 
       // Extraer JSON entre el primer { y ultimo }
