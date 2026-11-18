@@ -78,7 +78,7 @@ Evolution envía aquí los eventos de WhatsApp. El backend:
 2. Acepta únicamente el evento `messages.upsert` de la instancia `Tommy Bot`.
 3. Descarta mensajes enviados por el propio bot.
 4. Normaliza remitentes de WhatsApp `@lid` usando `remoteJidAlt` cuando existe.
-5. Compara el remitente con `TOMMY_TEST_NUMBER`.
+5. Compara el remitente con la lista de números de `TOMMY_TEST_NUMBERS` (o con `TOMMY_TEST_NUMBER` si no se definió la lista).
 6. Requiere texto normal o texto extendido.
 7. Remite el evento al webhook guardado en `TOMMY_N8N_WEBHOOK`.
 
@@ -88,7 +88,7 @@ Responde 403 si el secreto interno no coincide, 204 si el evento no debe activar
 
 n8n llama a esta ruta para obtener el texto que enviará al usuario.
 
-- Vuelve a comprobar `clientNumber` contra `TOMMY_TEST_NUMBER`.
+- Vuelve a comprobar `clientNumber` contra la lista de números autorizados.
 - Ejecuta `GroqService.analizarMensaje()` para extraer intención, producto y categoría.
 - Consulta los productos de PostgreSQL.
 - Si el usuario menciona una marca, selecciona esa marca. Si menciona una categoría, selecciona sus productos. Si no identifica ninguno, prepara la lista disponible.
@@ -97,7 +97,7 @@ n8n llama a esta ruta para obtener el texto que enviará al usuario.
 
 `demoPrices` contiene precios de ejemplo en dólares para diez alimentos. Se usan solo cuando el precio real de `precioKilo` está vacío o es cero. El campo `precioEsDemo` permite al modelo marcar esos importes como demostración. Hay que reemplazarlos por precios autorizados antes de presentar el bot como catálogo real.
 
-La allowlist depende de `TOMMY_TEST_NUMBER`. Sin esa variable el endpoint rechaza el acceso.
+La allowlist depende de `TOMMY_TEST_NUMBERS` (separados por comas) o, en su defecto, de `TOMMY_TEST_NUMBER`. Sin ninguna de las dos variables el endpoint rechaza el acceso.
 
 ### `src/ai/groq.ts`
 
@@ -182,7 +182,8 @@ Las variables se configuran en Railway. Los valores secretos no deben añadirse 
 | `GROQ_API_KEY` | TommyBot_Backend | Autentica solicitudes a Groq |
 | `GROQ_MODEL` | TommyBot_Backend | Modelo opcional; por defecto `openai/gpt-oss-20b` |
 | `PORT` | TommyBot_Backend | Puerto HTTP del backend |
-| `TOMMY_TEST_NUMBER` | TommyBot_Backend | Número autorizado, sin prefijo `+` |
+| `TOMMY_TEST_NUMBERS` | TommyBot_Backend | Números autorizados separados por comas, sin prefijo `+` |
+| `TOMMY_TEST_NUMBER` | TommyBot_Backend | Número autorizado individual (compatibilidad), sin prefijo `+` |
 | `TOMMY_WEBHOOK_SECRET` | TommyBot_Backend y configuración del webhook de Evolution | Protege la entrada desde Evolution al backend |
 | `TOMMY_N8N_WEBHOOK` | TommyBot_Backend | URL del webhook del workflow de catálogo |
 

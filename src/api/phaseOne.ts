@@ -4,7 +4,14 @@ import { AppDataSource } from '../database/data-source';
 import { GroqService } from '../ai/groq';
 
 export const phaseOne = Router();
-const allowed = () => process.env.TOMMY_TEST_NUMBER;
+const normalizar = (numero: unknown) =>
+  String(numero || '').replace(/^\+/, '').replace(/@s\.whatsapp\.net$/, '');
+const allowed = () => new Set(
+  (process.env.TOMMY_TEST_NUMBERS || process.env.TOMMY_TEST_NUMBER || '')
+    .split(',')
+    .map(normalizar)
+    .filter(Boolean)
+);
 const demoPrices: Record<string, number> = {
   Mirringo: 3.5, Donkat: 3, '9lives': 4, Gatsy: 4.5, Cipacat: 3.25,
   DogChow: 4, Ringo: 2.75, Filpo: 3, Supercan: 3.25, Knina: 4.25,
@@ -17,8 +24,9 @@ phaseOne.post('/api/evolution/incoming', async (req, res) => {
   const key = data?.key;
   const jid = key?.remoteJid;
   const pn = typeof jid === 'string' && jid.endsWith('@lid') ? key.remoteJidAlt : jid;
-  if (!allowed() || event !== 'messages.upsert' || instance !== 'Tommy Bot' ||
-      key?.fromMe !== false || pn !== allowed() + '@s.whatsapp.net' ||
+  const permitidos = allowed();
+  if (!permitidos.size || event !== 'messages.upsert' || instance !== 'Tommy Bot' ||
+      key?.fromMe !== false || !permitidos.has(normalizar(pn)) ||
       !(data.message?.conversation || data.message?.extendedTextMessage?.text))
     return res.sendStatus(204);
   try {
@@ -33,8 +41,9 @@ phaseOne.post('/api/evolution/incoming', async (req, res) => {
 
 phaseOne.post('/api/chat/inteligente', async (req, res) => {
   const { mensaje, clientNumber } = req.body || {};
-  const sender = String(clientNumber || '').replace(/^\+/, '').replace(/@s\.whatsapp\.net$/, '');
-  if (!allowed() || sender !== allowed()) return res.sendStatus(403);
+  const sender = normalizar(clientNumber);
+  const permitidos = allowed();
+  if (!permitidos.size || !permitidos.has(sender)) return res.sendStatus(403);
   if (typeof mensaje !== 'string' || !mensaje.trim()) return res.sendStatus(400);
   const analisis = await GroqService.analizarMensaje(mensaje);
   const items = await AppDataSource.getRepository(Producto).find({ relations: ['categoria'], order: { nombre: 'ASC' } });
